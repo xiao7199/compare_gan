@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import abc
 import csv
-import os
+import os, pdb
 
 from compare_gan.src import fid_score as fid_score_lib
 from compare_gan.src import gan_lib
@@ -874,7 +874,6 @@ def RunTaskEval(options, task_workdir, inception_graph, out_file="scores.csv"):
     checkpoint_dir = os.path.join(task_workdir, "checkpoint")
     # Fetch checkpoint to eval.
     checkpoint_state = tf.train.get_checkpoint_state(checkpoint_dir)
-
     all_checkpoint_paths = checkpoint_state.all_model_checkpoint_paths
     for checkpoint_path in all_checkpoint_paths:
       if checkpoint_path in finished_checkpoints:

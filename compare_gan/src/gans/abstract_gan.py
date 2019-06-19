@@ -6,7 +6,7 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 from contextlib import contextmanager
-import os
+import os, pdb
 import time
 
 from compare_gan.src.gans import consts
@@ -42,10 +42,11 @@ class AbstractGAN(object):
 
   def __init__(self, model_name, dataset_content, parameters, runtime_info):
     super(AbstractGAN, self).__init__()
+    self.debug_val = []
     self.model_name = model_name
     self.parameters = parameters
     self.use_tpu = parameters.get("use_tpu", False)
-
+    self.counter = 0
     # Initialize training-specific parameters.
     self.training_steps = int(parameters["training_steps"])
     self.save_checkpoint_steps = int(
@@ -161,7 +162,14 @@ class AbstractGAN(object):
     print(" [*] Reading checkpoints...")
 
     ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+
     if ckpt and ckpt.model_checkpoint_path:
+      # for i in range(len(ckpt.all_model_checkpoint_paths)):
+      #   # if '50000' in ckpt.all_model_checkpoint_paths[i]:
+      #   #   break
+      #   if '100000' in ckpt.all_model_checkpoint_paths[i]:
+      #     break
+      #ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
       ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
       self.saver.restore(sess, os.path.join(checkpoint_dir, ckpt_name))
       self.saver.recover_last_checkpoints(ckpt.all_model_checkpoint_paths)
@@ -280,16 +288,16 @@ class AbstractGAN(object):
 
     return tf.random_uniform(
         (batch_size, z_dim), minval=-1.0, maxval=1.0, name=name)
-
+    
   def run_single_train_step(self, features, counter, g_loss, sess):
     """Runs a single training step."""
-
+  
     # Update the discriminator network.
     _, summary_str, d_loss = sess.run(
         [self.d_optim, self.d_sum, self.d_loss],
         feed_dict=self.discriminator_feed_dict(features, labels=None))
+    self.counter = counter
     self.writer.add_summary(summary_str, counter)
-
     # Update the generator network.
     if (counter - 1) % self.disc_iters == 0 or g_loss is None:
       _, summary_str, g_loss = sess.run(

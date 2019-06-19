@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from tensorflow.python.framework import function
 from compare_gan.src.gans import ablation_resnet_architecture
 from compare_gan.src.gans import consts
 from compare_gan.src.gans import dcgan_architecture
@@ -26,7 +27,7 @@ from compare_gan.src.gans.abstract_gan import AbstractGAN
 
 from six.moves import range
 import tensorflow as tf
-
+import pdb
 flags = tf.flags
 FLAGS = flags.FLAGS
 
@@ -34,19 +35,34 @@ flags.DEFINE_boolean("print_penalty_loss", False,
                      "Whether to print penalty loss.")
 
 
+@function.Defun(tf.float32, tf.float32)
+def norm_grad(x, dy):
+    return dy*(x/(tf.norm(x, ord=2, axis = 2, keepdims= True)+1.0e-19))
+
+@function.Defun(tf.float32, grad_func=norm_grad)
+def norm(x):
+    return tf.norm(x, ord=2, axis = 2, keepdims = True)
+
+
 class AbstractGANWithPenalty(AbstractGAN):
   """GAN class for which we can modify loss/penalty/architecture via params."""
 
   def __init__(self, model_name, **kwargs):
     super(AbstractGANWithPenalty, self).__init__(model_name, **kwargs)
-
     self.architecture = self.parameters.get("architecture")
     self.penalty_type = self.parameters.get("penalty_type")
     self.discriminator_normalization = self.parameters.get(
         "discriminator_normalization")
 
-    if self.penalty_type not in consts.PENALTIES:
+    valid = 0
+    for penalty in consts.PENALTIES:
+      if penalty in self.penalty_type:
+        valid = 1
+    if valid == 0:
       raise ValueError("Penalty '%s' not recognized." % self.penalty_type)
+
+    # if self.penalty_type not in consts.PENALTIES:
+    #   raise ValueError("Penalty '%s' not recognized." % self.penalty_type)
 
     if self.discriminator_normalization not in consts.NORMALIZERS:
       raise ValueError("Normalization '%s' not recognized." % (
@@ -92,7 +108,8 @@ class AbstractGANWithPenalty(AbstractGAN):
       penalty_loss = sess.run(self.penalty_loss)
       print("\t\tlambda: %.4f penalty_loss: %.4f" % (self.lambd, penalty_loss))
 
-  def discriminator(self, x, is_training, reuse=False):
+  def discriminator(self, x, is_training, reuse=False, div_feat_level = -1):
+
     if self.architecture == consts.INFOGAN_ARCH:
       return super(AbstractGANWithPenalty, self).discriminator(
           x, is_training, reuse)
@@ -108,7 +125,7 @@ class AbstractGANWithPenalty(AbstractGAN):
           x, is_training, self.discriminator_normalization, reuse)
     elif self.architecture == consts.RESNET_CIFAR:
       return resnet_architecture.resnet_cifar_discriminator(
-          x, is_training, self.discriminator_normalization, reuse)
+          x, is_training, self.discriminator_normalization, reuse, div_feat_level)
     elif self.architecture == consts.RESNET_STL:
       return resnet_architecture.resnet_stl_discriminator(
           x, is_training, self.discriminator_normalization, reuse)
@@ -117,7 +134,7 @@ class AbstractGANWithPenalty(AbstractGAN):
           consts.SPECTRAL_NORM, consts.NO_NORMALIZATION]
       return dcgan_architecture.sn_discriminator(
           x, self.batch_size, reuse,
-          use_sn=self.discriminator_normalization == consts.SPECTRAL_NORM)
+          use_sn=self.discriminator_normalization == consts.SPECTRAL_NORM, div_feat_level = div_feat_level)
     elif self.architecture == consts.RESNET5_ABLATION:
       return ablation_resnet_architecture.resnet5_discriminator(
           x, is_training, self.discriminator_normalization, reuse,
@@ -188,6 +205,26 @@ class AbstractGANWithPenalty(AbstractGAN):
         tf.square(gradients), reduction_indices=[1, 2, 3]))
     gradient_penalty = tf.reduce_mean(tf.square(slopes - 1.0))
     return gradient_penalty
+
+  def compute_pairwise_dist(self, x):
+    batch_size = x.get_shape().as_list()[0]
+    x = tf.reshape(x, (batch_size,-1))
+    pair_wise_dist = norm(tf.reshape(x,(batch_size,1,-1)) - tf.reshape(x,(1, batch_size, -1)))[...,0]
+    norm_sum = tf.reshape(tf.reduce_sum(pair_wise_dist, axis = 1),(batch_size, 1))
+    norm_sum = tf.stop_gradient(norm_sum)
+    pair_wise_dist = tf.divide(pair_wise_dist, norm_sum)
+    d_grad, y_grad = tf.gradients(pair_wise_dist, [x, pair_wise_dist])
+    self.debug_val.append(d_grad)
+    self.debug_val.append(y_grad)
+    return pair_wise_dist
+
+  def diversity_loss(self, z, x_fake, ratio, div_feat_level, discriminator, is_training):
+    pair_wise_z = self.compute_pairwise_dist(z)
+    logits = discriminator(x_fake, is_training=is_training, reuse=True, div_feat_level = div_feat_level)
+    pair_wise_y = self.compute_pairwise_dist(logits)
+    loss = tf.reduce_mean(tf.nn.relu(ratio * pair_wise_z - pair_wise_y))
+    d_grad, y_grad = tf.gradients(loss, [logits, x_fake])
+    return loss
 
   def l2_penalty(self):
     """Returns the L2 penalty for each matrix/vector excluding biases."""
@@ -350,10 +387,8 @@ class AbstractGANWithPenalty(AbstractGAN):
         generated, is_training=is_training, reuse=True)
 
     self.discriminator_output = d_real
-
     if self.model_name not in consts.MODELS_WITH_PENALTIES:
       raise ValueError("Model %s not recognized" % self.model_name)
-
     # Define the loss functions
     if self.model_name == consts.GAN_WITH_PENALTY:
       d_loss_real = tf.reduce_mean(
@@ -383,7 +418,12 @@ class AbstractGANWithPenalty(AbstractGAN):
       self.g_loss = tf.reduce_mean(tf.nn.softplus(-d_fake_logits))
     else:
       raise ValueError("Unknown GAN model_name: %s" % self.model_name)
-
+    if '||' in self.penalty_type:
+      div_info = self.penalty_type[self.penalty_type.find('||')+2:]
+      div_indicator = self.penalty_type.find('||')
+      self.penalty_type = self.penalty_type[:self.penalty_type.find('||')]
+    else:
+      div_indicator = -1
     # Define the penalty.
     if self.penalty_type == consts.NO_PENALTY:
       self.penalty_loss = 0.0
@@ -401,15 +441,33 @@ class AbstractGANWithPenalty(AbstractGAN):
     else:
       raise NotImplementedError(
           "The penalty %s was not implemented." % self.penalty_type)
-
+    if div_indicator >= 0:
+      if len(div_info.split('_')) == 3:
+        ratio, div_feat_level, weight= div_info.split('_')
+        iter_off = 0.5
+      else:
+        ratio, div_feat_level, weight, iter_off = div_info.split('_')
+        iter_off = float(iter_off)
+      ratio = float(ratio)
+      div_feat_level = int(div_feat_level)
+      weight = float(weight)
+      weight_coeff = (1 - self.counter / self.training_steps)
+      print("USE DIVERSITY LOSS, ratio:{}, feat_level:{}, weight:{}".format(ratio, div_feat_level, weight))
+      div_loss = self.diversity_loss(z, generated, ratio, div_feat_level, self.discriminator, is_training)
+      if self.counter <= iter_off * self.training_steps:
+         self.g_loss += weight_coeff * weight * div_loss
+      self.g_loss += weight_coeff * weight * div_loss
+      div_loss_sum = tf.summary.scalar("div_loss", weight * div_loss)
     # Setup summaries.
-
     if not self.use_tpu:
       d_loss_real_sum = tf.summary.scalar("d_loss_real", d_loss_real)
       d_loss_fake_sum = tf.summary.scalar("d_loss_fake", d_loss_fake)
       d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
       g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
-      self.g_sum = tf.summary.merge([d_loss_fake_sum, g_loss_sum])
+      if div_indicator >= 0:
+        self.g_sum = tf.summary.merge([d_loss_fake_sum, g_loss_sum, div_loss_sum])
+      else:
+        self.g_sum = tf.summary.merge([d_loss_fake_sum, g_loss_sum])
       self.d_sum = tf.summary.merge([d_loss_real_sum, d_loss_sum])
 
   def build_model(self, is_training=True):
@@ -432,7 +490,6 @@ class AbstractGANWithPenalty(AbstractGAN):
 
     # Store testing images.
     self.fake_images = self.generator(self.z, is_training=False, reuse=True)
-
     # This subgraph will be used to evaluate generators.
     # It doesn't require any inputs and just keeps generating images.
     with tf.name_scope("generator_evaluation"):
@@ -440,7 +497,6 @@ class AbstractGANWithPenalty(AbstractGAN):
           self.batch_size, self.z_dim, name="input")
       result = self.generator(eval_input, is_training=False, reuse=True)
       result = tf.identity(result, name="result")
-
     # This subraph can be used as representation.
     # It pins the current values of batch_norm, and has a separate input tensor.
     with tf.name_scope("discriminator_representation"):
@@ -449,7 +505,6 @@ class AbstractGANWithPenalty(AbstractGAN):
           is_training=False,
           reuse=True)
       result = tf.identity(result, name="result")
-
     # Divide trainable variables into a group for D and group for G.
     t_vars = tf.trainable_variables()
     d_vars = [var for var in t_vars if "discriminator" in var.name]

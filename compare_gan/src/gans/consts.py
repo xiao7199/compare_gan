@@ -21,8 +21,9 @@ from __future__ import print_function
 GAN_WITH_PENALTY = "GAN_PENALTY"
 WGAN_WITH_PENALTY = "WGAN_PENALTY"
 LSGAN_WITH_PENALTY = "LSGAN_PENALTY"
+SN_GAN_WITH_PENALTY = "SN_GAN_PENALTY"
 MODELS_WITH_PENALTIES = [GAN_WITH_PENALTY, WGAN_WITH_PENALTY,
-                         LSGAN_WITH_PENALTY]
+                         LSGAN_WITH_PENALTY, SN_GAN_WITH_PENALTY]
 
 NO_NORMALIZATION = "none"
 BATCH_NORM = "batch_norm"
@@ -36,6 +37,10 @@ NO_PENALTY = "no_penalty"
 WGANGP_PENALTY = "wgangp_penalty"
 DRAGAN_PENALTY = "dragan_penalty"
 L2_PENALTY = "l2_penalty"
+DIV_PENLAY = 'wgangp_penalty||0.5_4_1'
+DIV_PENLAY1 = 'wgangp_penalty||0.4_3_1'
+DIV_PENLAY2 = 'wgangp_penalty||0.4_3_0.5'
+DIV_PENLAY3 = 'wgangp_penalty||0.4_3_1'
 PENALTIES = [NO_PENALTY, WGANGP_PENALTY, DRAGAN_PENALTY, L2_PENALTY]
 
 INFOGAN_ARCH = "infogan_arch"

@@ -134,7 +134,7 @@ def generator(z, batch_size, output_height, output_width, output_c_dim,
     return net
 
 
-def sn_discriminator(x, batch_size, reuse=False, use_sn=False):
+def sn_discriminator(x, batch_size, reuse=False, use_sn=False, div_feat_level = -1):
   """Returns the outputs of the SNDCGAN discriminator.
 
   Details are available at https://openreview.net/pdf?id=B1QRgziT-.
@@ -182,6 +182,8 @@ def sn_discriminator(x, batch_size, reuse=False, use_sn=False):
     net = tf.reshape(net, [batch_size, -1])
     out_logit = linear(net, 1, scope="d_fc1", use_sn=use_sn)
     out_logit = tf.squeeze(out_logit)
+    if div_feat_level >= 4:
+      return out_logit
     out = tf.nn.sigmoid(out_logit)
     return out, out_logit, net
 

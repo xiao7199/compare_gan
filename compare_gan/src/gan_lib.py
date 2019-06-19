@@ -21,7 +21,7 @@ from __future__ import print_function
 
 import collections
 import contextlib
-import os
+import os, pdb
 
 from compare_gan.src import datasets
 from compare_gan.src import params
@@ -52,7 +52,7 @@ MODELS = {
     "LSGAN": LSGAN,
     "BEGAN": BEGAN,
     "VAE": VAE,
-    "SN_GAN": GAN_PENALTY,
+    "SN_GAN_PENALTY": GAN_PENALTY,
     "GAN_PENALTY": GAN_PENALTY,
     "LSGAN_PENALTY": LSGAN_PENALTY,
     "WGAN_PENALTY": WGAN_PENALTY,
@@ -110,7 +110,7 @@ def load_dataset(dataset_name,
 def create_gan(gan_type, dataset, dataset_content, options,
                checkpoint_dir, result_dir, gan_log_dir):
   """Instantiates a GAN with the requested options."""
-
+  
   if gan_type not in MODELS:
     raise Exception("[!] Unrecognized GAN type: %s" % gan_type)
 
@@ -142,7 +142,6 @@ def create_gan(gan_type, dataset, dataset_content, options,
   runtime_info.checkpoint_dir = checkpoint_dir
   runtime_info.result_dir = result_dir
   runtime_info.log_dir = gan_log_dir
-
   return MODELS[gan_type](
       dataset_content=dataset_content,
       parameters=parameters,

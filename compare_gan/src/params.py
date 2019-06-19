@@ -285,7 +285,7 @@ def GANPENALTYHyperParams(range_type, gan_type, penalty_type=None):
     param_ranges.UpdateDefaults(
         {"beta1": 0.5, "learning_rate": 0.0001, "disc_iters": 5,
          "discriminator_normalization": consts.NO_NORMALIZATION})
-  elif gan_type == "SN_GAN" or gan_type == "LSGAN_PENALTY":
+  elif gan_type == "SN_GAN" or gan_type == "LSGAN_PENALTY" or gan_type == "SN_GAN_PENALTY":
     pass
   else:
     assert False, ("GAN type not recognized: %s." % gan_type)
@@ -312,7 +312,7 @@ def GetParameters(gan_type, range_type="narrow", penalty_type=None):
     return LSGANHyperParams(range_type)
   elif gan_type == "BEGAN":
     return BEGANHyperParams(range_type)
-  elif gan_type in ["GAN_PENALTY", "WGAN_PENALTY", "LSGAN_PENALTY", "SN_GAN"]:
+  elif gan_type in ["GAN_PENALTY", "WGAN_PENALTY", "LSGAN_PENALTY", "SN_GAN","SN_GAN_PENALTY"]:
     return GANPENALTYHyperParams(range_type, gan_type, penalty_type)
   elif gan_type in PARAMETERS:
     return PARAMETERS[gan_type](range_type, gan_type, penalty_type)

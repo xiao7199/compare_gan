@@ -352,7 +352,8 @@ def resnet_cifar_generator(noise,
 def resnet_cifar_discriminator(inputs,
                                is_training,
                                discriminator_normalization,
-                               reuse=None):
+                               reuse=None,
+                               div_feat_level = -1):
   _validate_image_inputs(inputs)
   colors = inputs.get_shape().as_list()[-1]
   assert colors in [1, 3]
@@ -370,15 +371,21 @@ def resnet_cifar_discriminator(inputs,
           is_training=is_training, reuse=reuse,
           discriminator_normalization=discriminator_normalization)
       channels = 128
+      if block_idx == div_feat_level and div_feat_level < 3:
+        return output
 
     # Final part - ReLU
     output = tf.nn.relu(output)
     # Global sum pooling (it's actually "mean" here, as that's what they had in
     # their implementation for resnet5). There was no implementation for Cifar.
     pre_logits = tf.reduce_mean(output, axis=[1, 2])
+    if div_feat_level == 3:
+      return pre_logits
     # dense -> 1
     use_sn = discriminator_normalization == consts.SPECTRAL_NORM
     out_logit = ops.linear(pre_logits, 1, scope="disc_final_fc", use_sn=use_sn)
+    if div_feat_level >= 4:
+      return out_logit
     out = tf.nn.sigmoid(out_logit)
     return out, out_logit, None
 

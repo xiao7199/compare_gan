@@ -646,7 +646,7 @@ def BestModelResnetCifar():
       "tf_seed": 2,
       "lambda": 10,
     },
-
+    
     # Line 4: FID score: 23.22
     {
       "training_steps": 200000,
@@ -687,6 +687,52 @@ def BestModelResnetCifar():
       "tf_seed": 2,
       "lambda": 10,
     },
+    
+    # Line 7: FID score: 22.91
+    {
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENLAY,
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 10,
+    },
+    {
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENLAY1,
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 10,
+    },
+    {
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENLAY2,
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 10,
+    },
+    {
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENLAY3,
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 10,
+    },  
   ]
 
   for model in best_models:
@@ -702,7 +748,125 @@ def BestModelResnetCifar():
 
   return best_models
 
-
+def Ndiv():
+  models = [
+    # GAN GP SN exp
+    # ori: FID: 25.960 
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.WGANGP_PENALTY
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    },
+    # Ndiv: FID: 22.759
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENALTY_GAN_GP_SN
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    },
+    # GAN SN exp
+    # ori: FID: 23.835 
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.NO_PENALTY
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    },
+    # Ndiv: FID: 23.71
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENALTY_GAN_SN
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    },
+    # WGAN GP SN exp
+    # ori: FID: 25.654
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.SN_GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.WGANGP_PENALTY
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    },
+    # Ndiv: FID: 23.922
+    {
+      "architecture": consts.RESNET_CIFAR,
+      "dataset": "cifar10",
+      "batch_size": 64,
+      "gan_type": consts.SN_GAN_WITH_PENALTY,
+      "optimizer": "adam",
+      "save_checkpoint_steps": 20000,
+      "z_dim": 128,
+      "training_steps": 200000,
+      "penalty_type": consts.DIV_PENALTY_WGAN_GP_SN
+      "learning_rate": 0.0002,
+      "beta1": 0.5,
+      "beta2": 0.999,
+      "disc_iters": 5,
+      "discriminator_normalization": consts.SPECTRAL_NORM,
+      "tf_seed": 2,
+      "lambda": 1 
+    }]
 def GetTasks(experiment):
   """Get a list of tasks to run and eval for the given experiment name."""
   random.seed(123)
@@ -726,6 +890,8 @@ def GetTasks(experiment):
   elif experiment == "best_models_resnet19":
     return BestModelResnet19();
   elif experiment == "best_models_resnet_cifar":
-    return BestModelResnetCifar();
+    return BestModelResnetCifar(); 
+  elif experiment == "ndiv":
+    return Ndiv();
   else:
     raise ValueError("Unknown experiment %s" % experiment)
