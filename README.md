@@ -7,6 +7,7 @@ compare_gan_prepare_datasets.sh
 compare_gan_generate_tasks --workdir=/tmp/results --experiment=ndiv
 # Taks num varies from 0 - 5, please check "src/generate_tasks_lib.py" for configuration details
 compare_gan_run_one_task --workdir=/tmp/results --task_num=0 --dataset_root=/tmp/datasets
+```
 ## Compare GAN code.
 
 This is the code that was used in "Are GANs Created Equal? A Large-Scale Study"
