@@ -1,4 +1,6 @@
 ## Ndiv GAN code.
+This repo is developed based on the original [compare_gan](https://github.com/google/compare_gan) implementation. We appreaciate authors' effort to organize the code and make it public avaliable. 
+
 To run the code:
 
 ```shell
